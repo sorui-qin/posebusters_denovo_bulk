@@ -1,7 +1,7 @@
 """
 Author: Rui Qin
-Date: 2023-12-12 11:01:29
-LastEditTime: 2023-12-13 10:38:53
+Date: 2023-12-13 10:45:33
+LastEditTime: 2023-12-13 10:54:50
 Description:Run Posebusters for the generated molecular conformations.
 Codes inspired from https://posebusters.readthedocs.io/en/latest/api_notebook.html
 Run the script as: python conf_check.py [input_path] [output_path]
@@ -9,6 +9,7 @@ Run the script as: python conf_check.py [input_path] [output_path]
 from posebusters import PoseBusters
 from pathlib import Path
 from tqdm import tqdm
+from multiprocessing import Pool
 import pandas as pd
 import numpy as np
 import sys
@@ -23,16 +24,13 @@ def df_metrics_to_freq(df: pd.DataFrame) -> pd.DataFrame:
     return freq
 
 
-def run_buster(path) -> pd.DataFrame:
+def run_buster(sdf) -> pd.DataFrame:
     """
     Execute Posebuster.
     """
-    overall_df = pd.DataFrame()
-    for sdf in tqdm(Path(path).glob("*.sdf")):
-        df = PoseBusters(config="mol").bust(sdf)
-        freq = df_metrics_to_freq(df)
-        overall_df = pd.concat([overall_df, freq])
-    return overall_df
+    df = PoseBusters(config="mol").bust(sdf)
+    freq = df_metrics_to_freq(df)
+    return freq
 
 
 if __name__ == "__main__":
@@ -44,5 +42,12 @@ if __name__ == "__main__":
         output_csv = f"{out}/{Path(path).name}.csv"
         if Path(output_csv).exists():
             continue
-        df = run_buster(path)
-        df.to_csv(output_csv)
+
+        overall_df = pd.DataFrame()
+        with Pool() as pool:
+            df_list = list(
+                tqdm(pool.imap(run_buster, Path(path).glob("*.sdf")), total=len(list(Path(path).glob("*.sdf"))))
+            )
+        for freq in df_list:
+            overall_df = pd.concat([overall_df, freq])
+        overall_df.to_csv(output_csv)
