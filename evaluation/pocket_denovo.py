@@ -1,12 +1,11 @@
 """
 Author: Rui Qin
 Date: 2023-12-11 14:03:58
-LastEditTime: 2023-12-12 21:36:19
-Description:Run Posebusters with the bulk of de-novo generated molecules.
+LastEditTime: 2023-12-14 15:52:10
+Description: Run Posebusters with the bulk of de-novo generated molecules.
 Codes inspired from https://posebusters.readthedocs.io/en/latest/api_notebook.html
 Run the script as: python pocket_denovo.py [input_path] [output_path]
 """
-
 from posebusters import PoseBusters
 from pathlib import Path
 import pandas as pd
@@ -49,6 +48,7 @@ def run_buster(path) -> pd.DataFrame:
     cond_file = glob.glob(f"{path}/*.pdb")[0]
     buster = PoseBusters(config="dock")
     df = buster.bust(pred_file, true_file, cond_file, full_report=True)
+    # if need a concise report, set full_report=False
     return df
 
 
